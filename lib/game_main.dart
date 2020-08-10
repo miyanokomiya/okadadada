@@ -92,7 +92,7 @@ class _GameMainState extends State<GameMain>
                     child: GestureDetector(
                       onTapDown: (details) {
                         var p =
-                            this.gameField.convertOffset(details.localPosition);
+                            this.gameField.inverseOffset(details.localPosition);
                         print("${p.dx}");
                         print("${p.dy}");
                       },
