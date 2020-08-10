@@ -1,6 +1,8 @@
 # okadadada
 
-A new Flutter project.
+wip
+
+for web: https://miyanokomiya.github.io/okadadada/index.html
 
 ## Getting Started
 
