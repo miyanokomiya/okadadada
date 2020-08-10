@@ -39,7 +39,7 @@ class GameField {
   Size convertSize(Size org) => multiSize(org, this.scale());
 
   Offset inverseOffset(Offset org) =>
-      subOffset(multiOffset(org, 1 / this.scale()), this.dOffset());
+      multiOffset(subOffset(org, this.dOffset()), 1 / this.scale());
 }
 
 Offset addOffset(Offset a, Offset b) {
