@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
+import 'dart:math';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'game_field.dart';
 
 class GameMain extends StatefulWidget {
@@ -34,13 +39,28 @@ class _GameMainState extends State<GameMain>
   }
 
   void initGameState() {
-    this.blocks = List.generate(5, (i) {
-      var block = Block.init(x: i * 50.0, y: 0, blockType: BlockType.Oka)
-        ..animation = Tween(begin: 0.0, end: 1.0).animate(_animationController)
-        ..pipeAnimation = (block) => Offset(block.x,
-            block.y + this.gameField.fieldSize.height * block.animation.value);
-      return block;
-    });
+    var length = 5;
+    this.blocks = List.generate(length, (i) {
+      return List.generate(length, (j) {
+        var block = Block.init(
+            x: i * 80.0 +
+                this.gameField.fieldSize.width / 2 -
+                80 * (length - 1) / 2,
+            y: j * 80.0 +
+                this.gameField.fieldSize.height / 2 -
+                80 * (length - 1) / 2,
+            blockType: (i + j) % 2 == 0 ? BlockType.Oka : BlockType.Da)
+          ..animation =
+              Tween(begin: 0.0, end: 1.0).animate(_animationController)
+          ..pipeAnimation = (block) => block.clone()
+            ..rotation = 2 *
+                pi *
+                block.animation.value *
+                (block.blockType == BlockType.Oka ? 1 : -1);
+
+        return block;
+      });
+    }).expand((v) => v).toList();
     _animationController.reset();
     _animationController.forward();
   }
@@ -112,10 +132,27 @@ class _GameMainState extends State<GameMain>
 }
 
 class _BlockListPainter extends CustomPainter {
+  static ui.Image imageOka;
+  static ui.Image imageDa;
+  static bool imageLoaded = false;
+
+  static Future<Null> initImage() async {
+    if (imageLoaded) return;
+    imageOka = await loadImageAsset('assets/images/oka.png');
+    imageDa = await loadImageAsset('assets/images/da.png');
+    imageLoaded = true;
+  }
+
   GameField gameField;
   List<Block> blocks;
 
-  _BlockListPainter(this.blocks, this.gameField);
+  _BlockListPainter(this.blocks, this.gameField) {
+    initImage();
+  }
+
+  ui.Image getBlockImage(Block block) {
+    return block.blockType == BlockType.Oka ? imageOka : imageDa;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -129,17 +166,34 @@ class _BlockListPainter extends CustomPainter {
   }
 
   void paintBlock(Canvas canvas, Block block) {
-    var paint = Paint()
-      ..isAntiAlias = true
-      ..color = Colors.blue
-      ..strokeWidth = this.gameField.convertDouble(5.0)
-      ..style = PaintingStyle.stroke;
-    canvas.drawRect(
-        Rect.fromCenter(
-            center: this.gameField.convertOffset(block.animatedOffset()),
-            width: this.gameField.convertDouble(block.width),
-            height: this.gameField.convertDouble(block.height)),
-        paint);
+    var entity = block.animatedEntity();
+    var convertedCenter =
+        this.gameField.convertOffset(Offset(entity.x, entity.y));
+    var rect = Rect.fromCenter(
+        center: convertedCenter,
+        width: this.gameField.convertDouble(block.width),
+        height: this.gameField.convertDouble(block.height));
+
+    canvas.save();
+    canvas.translate(convertedCenter.dx, convertedCenter.dy);
+    canvas.rotate(entity.rotation);
+    canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
+    if (imageLoaded) {
+      var image = this.getBlockImage(block);
+      canvas.drawImageRect(
+          image,
+          Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+          rect,
+          Paint());
+    } else {
+      canvas.drawRect(
+          rect,
+          Paint()
+            ..isAntiAlias = true
+            ..color = Colors.blue
+            ..style = PaintingStyle.fill);
+    }
+    canvas.restore();
   }
 
   @override
@@ -160,13 +214,18 @@ class RectEntity {
   double height;
   double rotation;
   double scale;
-  Animation<double> animation;
 
   RectEntity.init(this.x, this.y)
-      : this.width = 30,
-        this.height = 30,
+      : this.width = 50,
+        this.height = 50,
         this.rotation = 0,
         this.scale = 0;
+
+  RectEntity clone() => RectEntity.init(this.x, this.y)
+    ..width = this.width
+    ..height = this.height
+    ..rotation = this.rotation
+    ..scale = this.scale;
 
   left() => this.x - this.width / 2;
   right() => this.x + this.width / 2;
@@ -176,13 +235,19 @@ class RectEntity {
 
 class Block extends RectEntity {
   BlockType blockType;
-  Offset Function(Block) pipeAnimation;
+  Animation<double> animation;
+  RectEntity Function(Block) pipeAnimation;
 
   Block.init({double x, double y, this.blockType}) : super.init(x, y);
 
-  Offset animatedOffset() => this.pipeAnimation(this);
+  RectEntity animatedEntity() => this.pipeAnimation(this);
 
   // bool testHit(Offset p) {
   //   var center = this.animatedOffset();
   // }
+}
+
+Future<ui.Image> loadImageAsset(String assetName) async {
+  final data = await rootBundle.load(assetName);
+  return decodeImageFromList(data.buffer.asUint8List());
 }
