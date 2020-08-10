@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
-import 'dart:math';
 import 'package:flutter/animation.dart';
+import 'game_field.dart';
 
 class GameMain extends StatefulWidget {
   @override
@@ -12,20 +11,22 @@ class _GameMainState extends State<GameMain>
     with SingleTickerProviderStateMixin {
   AnimationController _animationController;
 
+  GameField gameField;
   List<Block> blocks;
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(duration: const Duration(seconds: 2), vsync: this)
+    this.gameField = GameField(Size(500, 800));
+    this._animationController =
+        AnimationController(duration: const Duration(seconds: 5), vsync: this)
           ..addListener(() {
             setState(() {});
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
-              _animationController.reverse();
+              this._animationController.reverse();
             } else if (status == AnimationStatus.dismissed) {
-              _animationController.forward();
+              this._animationController.forward();
             }
           });
     this.initGameState();
@@ -35,8 +36,9 @@ class _GameMainState extends State<GameMain>
   void initGameState() {
     this.blocks = List.generate(5, (i) {
       var block = Block.init(x: i * 50.0, y: 0, blockType: BlockType.Oka)
-        ..animation =
-            Tween(begin: 0.0, end: 100.0).animate(_animationController);
+        ..animation = Tween(begin: 0.0, end: 1.0).animate(_animationController)
+        ..pipeAnimation = (block) => Offset(block.x,
+            block.y + this.gameField.fieldSize.height * block.animation.value);
       return block;
     });
     _animationController.reset();
@@ -51,6 +53,9 @@ class _GameMainState extends State<GameMain>
 
   @override
   Widget build(BuildContext context) {
+    var screenSize = MediaQuery.of(context).size;
+    this.gameField.screenSize = Size(screenSize.width, screenSize.height - 220);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('岡田ダダ - Play -'),
@@ -83,20 +88,18 @@ class _GameMainState extends State<GameMain>
             Expanded(
                 child: OverflowBox(
               child: Container(
-                  color: Colors.white,
+                  color: Colors.black,
                   child: ClipRect(
                     child: GestureDetector(
                       onTapDown: (details) {
-                        print("${details.localPosition.dx}");
-                        print("${details.localPosition.dx}");
+                        var p =
+                            this.gameField.convertOffset(details.localPosition);
+                        print("${p.dx}");
+                        print("${p.dy}");
                       },
                       child: CustomPaint(
-                        painter: _BlockListPainter(this.blocks),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black, width: 10),
-                          ),
-                        ),
+                        painter: _BlockListPainter(this.blocks, this.gameField),
+                        child: Container(),
                       ),
                     ),
                   )),
@@ -109,54 +112,35 @@ class _GameMainState extends State<GameMain>
 }
 
 class _BlockListPainter extends CustomPainter {
+  GameField gameField;
   List<Block> blocks;
 
-  _BlockListPainter(this.blocks);
+  _BlockListPainter(this.blocks, this.gameField);
 
   @override
   void paint(Canvas canvas, Size size) {
-    this.blocks.forEach((block) => this.paintBlock(canvas, size, block));
+    var paint = Paint()
+      ..isAntiAlias = true
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.clipRect(this.gameField.convertedRect());
+    canvas.drawRect(this.gameField.convertedRect(), paint);
+    this.blocks.forEach((block) => this.paintBlock(canvas, block));
   }
 
-  void paintBlock(Canvas canvas, Size size, Block block) {
+  void paintBlock(Canvas canvas, Block block) {
     var paint = Paint()
       ..isAntiAlias = true
       ..color = Colors.blue
-      ..strokeWidth = 5.0
+      ..strokeWidth = this.gameField.convertDouble(5.0)
       ..style = PaintingStyle.stroke;
     canvas.drawRect(
         Rect.fromCenter(
-            center: Offset(block.x, block.y + block.animation.value),
-            width: block.width,
-            height: block.height),
+            center: this.gameField.convertOffset(block.animatedOffset()),
+            width: this.gameField.convertDouble(block.width),
+            height: this.gameField.convertDouble(block.height)),
         paint);
   }
-
-  // void tmppaint(Canvas canvas, Size size) {
-  //   final TextStyle style = TextStyle(
-  //     color: Colors.black,
-  //     backgroundColor: Colors.green[100],
-  //     decorationColor: Colors.green,
-  //   );
-  //   final ui.ParagraphBuilder paragraphBuilder =
-  //       ui.ParagraphBuilder(ui.ParagraphStyle(
-  //     fontSize: 50,
-  //     fontWeight: FontWeight.w600,
-  //     textAlign: TextAlign.center,
-  //   ))
-  //         ..pushStyle(style.getTextStyle())
-  //         ..addText('岡');
-  //   final ui.Paragraph paragraph = paragraphBuilder.build()
-  //     ..layout(ui.ParagraphConstraints(width: 0));
-
-  //   final rate = this.radius / 100.0;
-  //   canvas.save();
-  //   canvas.translate(0, 100);
-  //   canvas.rotate(2 * pi * rate);
-  //   canvas.scale(rate);
-  //   canvas.drawParagraph(paragraph, Offset(0, -50 * rate));
-  //   canvas.restore();
-  // }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
@@ -192,6 +176,13 @@ class RectEntity {
 
 class Block extends RectEntity {
   BlockType blockType;
+  Offset Function(Block) pipeAnimation;
 
   Block.init({double x, double y, this.blockType}) : super.init(x, y);
+
+  Offset animatedOffset() => this.pipeAnimation(this);
+
+  // bool testHit(Offset p) {
+  //   var center = this.animatedOffset();
+  // }
 }
