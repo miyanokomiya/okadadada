@@ -6,15 +6,16 @@ const RESOURCES = {
   "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
-"main.dart.js": "1b6b2ec0c7926697efbbd9cfd5318abe",
+"main.dart.js": "e7f4075c892dad63fe160e97fd1bbaab",
 "index.html": "fec646adc06e4d00b64a12f4a607834f",
 "/": "fec646adc06e4d00b64a12f4a607834f",
 "manifest.json": "39649363c3bc5a43fccd21750edd0517",
 "assets/FontManifest.json": "01700ba55b08a6141f33e168c4a6c22f",
 "assets/fonts/MaterialIcons-Regular.ttf": "56d3ffdef7a25659eab6a68a3fbfaf16",
 "assets/packages/cupertino_icons/assets/CupertinoIcons.ttf": "115e937bb829a890521f72d2e664b632",
-"assets/AssetManifest.json": "618f064ac72da12c318052f2c1bb0304",
+"assets/AssetManifest.json": "d2c8535b8bcee7e228221ffe98cb5c7b",
 "assets/NOTICES": "75f844c915b80ed4008257142b307475",
+"assets/assets/images/da_kana.png": "6b36e82b20106dfa8b6eba88a5bfbef2",
 "assets/assets/images/da.png": "71998cf6b8445367401ef7eb580e35ba",
 "assets/assets/images/oka.png": "0653760bff075789545f0418b50098ad"
 };
