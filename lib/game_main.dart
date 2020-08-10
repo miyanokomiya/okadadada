@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'game_field.dart';
+import 'block.dart';
 
 class GameMain extends StatefulWidget {
   @override
@@ -23,14 +24,13 @@ class _GameMainState extends State<GameMain>
   void initState() {
     this.gameField = GameField(Size(500, 800));
     this._animationController =
-        AnimationController(duration: const Duration(seconds: 5), vsync: this)
+        AnimationController(duration: const Duration(seconds: 10), vsync: this)
           ..addListener(() {
             setState(() {});
           })
           ..addStatusListener((status) {
             if (status == AnimationStatus.completed) {
-              this._animationController.reverse();
-            } else if (status == AnimationStatus.dismissed) {
+              this._animationController.reset();
               this._animationController.forward();
             }
           });
@@ -39,30 +39,20 @@ class _GameMainState extends State<GameMain>
   }
 
   void initGameState() {
-    var length = 5;
+    var length = 10;
+    var typeIndexList = List.generate(length, (i) => i)..shuffle();
+    var motionGenerator = MotionGenerator(this.gameField.fieldSize, 60, length);
     this.blocks = List.generate(length, (i) {
-      return List.generate(length, (j) {
-        var block = Block.init(
-            x: i * 80.0 +
-                this.gameField.fieldSize.width / 2 -
-                80 * (length - 1) / 2,
-            y: j * 80.0 +
-                this.gameField.fieldSize.height / 2 -
-                80 * (length - 1) / 2,
-            blockType: (i + j) % 2 == 0 ? BlockType.Oka : BlockType.Da)
-          ..animation =
-              Tween(begin: 0.0, end: 1.0).animate(_animationController)
-          ..pipeAnimation = (block) => block.clone()
-            ..rotation = 2 *
-                pi *
-                block.animation.value *
-                (block.blockType == BlockType.Oka ? 1 : -1);
-
-        return block;
-      });
-    }).expand((v) => v).toList();
-    _animationController.reset();
-    _animationController.forward();
+      var motion = motionGenerator.generate(i);
+      return Block.init(
+          blockType: getBlockType(length, typeIndexList[i]),
+          x: motion.from.dx,
+          y: motion.from.dy)
+        ..animation = Tween(begin: 0.0, end: 1.0).animate(_animationController)
+        ..pipeAnimation = motion.transform;
+    });
+    this._animationController.reset();
+    this._animationController.forward();
   }
 
   @override
@@ -91,17 +81,6 @@ class _GameMainState extends State<GameMain>
                     child: Text('Reset'),
                     onPressed: () {
                       this.initGameState();
-                    },
-                  ),
-                  Container(width: 20),
-                  RaisedButton(
-                    child: Text('Start/Stop'),
-                    onPressed: () {
-                      if (_animationController.isAnimating) {
-                        _animationController.reset();
-                      } else {
-                        _animationController.repeat();
-                      }
                     },
                   ),
                 ])),
@@ -134,12 +113,14 @@ class _GameMainState extends State<GameMain>
 class _BlockListPainter extends CustomPainter {
   static ui.Image imageOka;
   static ui.Image imageDa;
+  static ui.Image imageDaKana;
   static bool imageLoaded = false;
 
   static Future<Null> initImage() async {
     if (imageLoaded) return;
     imageOka = await loadImageAsset('assets/images/oka.png');
     imageDa = await loadImageAsset('assets/images/da.png');
+    imageDaKana = await loadImageAsset('assets/images/da_kana.png');
     imageLoaded = true;
   }
 
@@ -151,7 +132,14 @@ class _BlockListPainter extends CustomPainter {
   }
 
   ui.Image getBlockImage(Block block) {
-    return block.blockType == BlockType.Oka ? imageOka : imageDa;
+    switch (block.blockType) {
+      case BlockType.Oka:
+        return imageOka;
+      case BlockType.Da:
+        return imageDa;
+      default:
+        return imageDaKana;
+    }
   }
 
   @override
@@ -202,52 +190,13 @@ class _BlockListPainter extends CustomPainter {
   }
 }
 
-enum BlockType {
-  Oka,
-  Da,
-}
-
-class RectEntity {
-  double x;
-  double y;
-  double width;
-  double height;
-  double rotation;
-  double scale;
-
-  RectEntity.init(this.x, this.y)
-      : this.width = 50,
-        this.height = 50,
-        this.rotation = 0,
-        this.scale = 0;
-
-  RectEntity clone() => RectEntity.init(this.x, this.y)
-    ..width = this.width
-    ..height = this.height
-    ..rotation = this.rotation
-    ..scale = this.scale;
-
-  left() => this.x - this.width / 2;
-  right() => this.x + this.width / 2;
-  top() => this.y - this.height / 2;
-  bottom() => this.y + this.height / 2;
-}
-
-class Block extends RectEntity {
-  BlockType blockType;
-  Animation<double> animation;
-  RectEntity Function(Block) pipeAnimation;
-
-  Block.init({double x, double y, this.blockType}) : super.init(x, y);
-
-  RectEntity animatedEntity() => this.pipeAnimation(this);
-
-  // bool testHit(Offset p) {
-  //   var center = this.animatedOffset();
-  // }
-}
-
 Future<ui.Image> loadImageAsset(String assetName) async {
   final data = await rootBundle.load(assetName);
   return decodeImageFromList(data.buffer.asUint8List());
+}
+
+BlockType getBlockType(int length, int index) {
+  if (index < (length * 0.2).ceil()) return BlockType.Oka;
+  if (index > (length * 0.7).floor()) return BlockType.Da;
+  return BlockType.DaKana;
 }
