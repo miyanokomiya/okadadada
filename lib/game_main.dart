@@ -61,6 +61,23 @@ class _GameMainState extends State<GameMain>
     super.dispose();
   }
 
+  void tapField(Offset localPosition) {
+    var p = this.gameField.inverseOffset(localPosition);
+    var target = this
+        .blocks
+        .reversed
+        .firstWhere((b) => b.testHit(p), orElse: () => null);
+    if (target != null) {
+      target.fix();
+      setState(() {
+        this.blocks.sort((a, b) => a.blockStatus == BlockStatus.Fixed &&
+                b.blockStatus == BlockStatus.Moving
+            ? 1
+            : -1);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var screenSize = MediaQuery.of(context).size;
@@ -75,8 +92,12 @@ class _GameMainState extends State<GameMain>
           children: [
             Container(
                 padding: EdgeInsets.all(20.0),
-                child:
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  Text(
+                      '${this.blocks.where((b) => b.blockStatus == BlockStatus.Fixed).length} / ${this.blocks.length}',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
+                  Container(width: 20),
                   RaisedButton(
                     child: Text('Reset'),
                     onPressed: () {
@@ -91,10 +112,7 @@ class _GameMainState extends State<GameMain>
                   child: ClipRect(
                     child: GestureDetector(
                       onTapDown: (details) {
-                        var p =
-                            this.gameField.inverseOffset(details.localPosition);
-                        print("${p.dx}");
-                        print("${p.dy}");
+                        this.tapField(details.localPosition);
                       },
                       child: CustomPaint(
                         painter: _BlockListPainter(this.blocks, this.gameField),
@@ -166,6 +184,15 @@ class _BlockListPainter extends CustomPainter {
     canvas.translate(convertedCenter.dx, convertedCenter.dy);
     canvas.rotate(entity.rotation);
     canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
+    canvas.drawCircle(
+        rect.center,
+        this.gameField.convertDouble(block.radius),
+        Paint()
+          ..isAntiAlias = true
+          ..color = block.blockStatus == BlockStatus.Moving
+              ? Colors.blue
+              : Colors.grey
+          ..style = PaintingStyle.fill);
     if (imageLoaded) {
       var image = this.getBlockImage(block);
       canvas.drawImageRect(
@@ -173,13 +200,6 @@ class _BlockListPainter extends CustomPainter {
           Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
           rect,
           Paint());
-    } else {
-      canvas.drawRect(
-          rect,
-          Paint()
-            ..isAntiAlias = true
-            ..color = Colors.blue
-            ..style = PaintingStyle.fill);
     }
     canvas.restore();
   }

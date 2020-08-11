@@ -9,6 +9,11 @@ enum BlockType {
   DaKana,
 }
 
+enum BlockStatus {
+  Moving,
+  Fixed,
+}
+
 class RectEntity {
   double x;
   double y;
@@ -29,35 +34,48 @@ class RectEntity {
     ..rotation = this.rotation
     ..scale = this.scale;
 
-  left() => this.x - this.width / 2;
-  right() => this.x + this.width / 2;
-  top() => this.y - this.height / 2;
-  bottom() => this.y + this.height / 2;
+  double left() => this.x - this.width / 2;
+  double right() => this.x + this.width / 2;
+  double top() => this.y - this.height / 2;
+  double bottom() => this.y + this.height / 2;
+  Offset get center => Offset(this.x, this.y);
 }
 
 class Block extends RectEntity {
   BlockType blockType;
+  BlockStatus blockStatus = BlockStatus.Moving;
   Animation<double> animation;
   RectEntity Function(Block) pipeAnimation;
+  double radiusRate = 0.8;
+
+  double get radius => this.width * this.radiusRate;
 
   Block.init({double x, double y, this.blockType}) : super.init(x, y);
 
   RectEntity animatedEntity() => this.pipeAnimation(this);
 
-  // bool testHit(Offset p) {
-  //   var center = this.animatedOffset();
-  // }
+  bool testHit(Offset p) {
+    var center = this.animatedEntity().center;
+    return (p - center).distance < this.radius;
+  }
+
+  void fix() {
+    this.blockStatus = BlockStatus.Fixed;
+    this.radiusRate = 2;
+    var fixed = this.animatedEntity();
+    this.pipeAnimation = (Block _) => fixed;
+  }
 }
 
 class MotionGenerator {
   Size field;
-  double blockRadius;
+  double itemInterval;
   int count;
   Random random = Random();
 
-  MotionGenerator(this.field, this.blockRadius, this.count);
+  MotionGenerator(this.field, this.itemInterval, this.count);
 
-  double margin() => 2 * this.blockRadius;
+  double margin() => 2 * this.itemInterval;
 
   MotionData generate(int index) {
     return this.toBottom(this.random.nextDouble(), index);
@@ -69,7 +87,7 @@ class MotionGenerator {
     var rotateDirection = this.getRotateDirection();
     return MotionData(
         Offset(
-            this.blockRadius + rate * (this.field.width - 2 * this.blockRadius),
+            this.itemInterval + rate * (this.field.width - 2 * this.itemInterval),
             0),
         (block) => block.clone()
           ..y = block.animation.value * d - delay

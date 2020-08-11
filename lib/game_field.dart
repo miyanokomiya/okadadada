@@ -13,7 +13,7 @@ class GameField {
       ? this.screenSize.width / this.fieldSize.width
       : this.screenSize.height / this.fieldSize.height);
 
-  Size scaledField() => multiSize(this.fieldSize, this.scale());
+  Size scaledField() => this.fieldSize * this.scale();
   double dx() {
     var scaledWidth = this.scaledField().width;
     return scaledWidth < this.screenSize.width
@@ -34,26 +34,8 @@ class GameField {
   }
 
   double convertDouble(double org) => org * this.scale();
-  Offset convertOffset(Offset org) =>
-      addOffset(multiOffset(org, this.scale()), this.dOffset());
-  Size convertSize(Size org) => multiSize(org, this.scale());
+  Offset convertOffset(Offset org) => org * this.scale() + this.dOffset();
+  Size convertSize(Size org) => org * this.scale();
 
-  Offset inverseOffset(Offset org) =>
-      multiOffset(subOffset(org, this.dOffset()), 1 / this.scale());
-}
-
-Offset addOffset(Offset a, Offset b) {
-  return Offset(a.dx + b.dx, a.dy + b.dy);
-}
-
-Offset subOffset(Offset a, Offset b) {
-  return Offset(a.dx - b.dx, a.dy - b.dy);
-}
-
-Offset multiOffset(Offset org, double rate) {
-  return Offset(org.dx * rate, org.dy * rate);
-}
-
-Size multiSize(Size org, double rate) {
-  return Size(org.width * rate, org.height * rate);
+  Offset inverseOffset(Offset org) => (org - this.dOffset()) / this.scale();
 }
