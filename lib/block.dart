@@ -66,23 +66,22 @@ class MotionGenerator {
   MotionData toBottom(double rate, int index) {
     var delay = (index + 1) * this.margin();
     var d = this.field.height + this.margin() * this.count;
+    var rotateDirection = this.getRotateDirection();
     return MotionData(
         Offset(
             this.blockRadius + rate * (this.field.width - 2 * this.blockRadius),
             0),
         (block) => block.clone()
           ..y = block.animation.value * d - delay
-          ..rotation = autoRotation(block));
+          ..rotation = autoRotation(block, rotateDirection));
   }
 
-  double autoRotation(Block block) {
-    return 2 * pi * block.animation.value * getRotateDirection(block.blockType);
+  double autoRotation(Block block, int direction) {
+    return 6 * pi * block.animation.value * direction;
   }
 
-  int getRotateDirection(BlockType blockType) {
-    if (blockType == BlockType.Oka) return 1;
-    if (blockType == BlockType.Da) return -1;
-    return 0;
+  int getRotateDirection() {
+    return 1 - 2 * this.random.nextInt(2);
   }
 }
 
