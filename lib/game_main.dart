@@ -7,23 +7,33 @@ import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'game_field.dart';
 import 'block.dart';
 
-class GameMain extends StatefulWidget {
+class GameMain extends StatelessWidget {
   @override
-  _GameMainState createState() => _GameMainState();
+  Widget build(BuildContext context) {
+    var screenSize = MediaQuery.of(context).size;
+    return GameApp(
+        gameField: GameField(
+            Size(500, 800), Size(screenSize.width, screenSize.height - 220)));
+  }
 }
 
-class _GameMainState extends State<GameMain>
-    with SingleTickerProviderStateMixin {
-  AnimationController _animationController;
+class GameApp extends StatefulWidget {
+  final GameField gameField;
 
-  GameField gameField;
+  GameApp({Key key, this.gameField}) : super(key: key);
+
+  @override
+  _GameAppState createState() => _GameAppState();
+}
+
+class _GameAppState extends State<GameApp> with SingleTickerProviderStateMixin {
+  AnimationController _animationController;
   List<Block> blocks;
 
   @override
   void initState() {
-    this.gameField = GameField(Size(500, 800));
     this._animationController =
-        AnimationController(duration: const Duration(seconds: 10), vsync: this)
+        AnimationController(duration: const Duration(seconds: 15), vsync: this)
           ..addListener(() {
             setState(() {});
           })
@@ -40,7 +50,8 @@ class _GameMainState extends State<GameMain>
   void initGameState() {
     var length = 15;
     var typeIndexList = List.generate(length, (i) => i)..shuffle();
-    var motionGenerator = MotionGenerator(this.gameField.fieldSize, 80, length);
+    var motionGenerator =
+        MotionGenerator(this.widget.gameField.fieldSize, 80, length);
     this.blocks = List.generate(length, (i) {
       var motion = motionGenerator.generate(i);
       return Block.init(
@@ -61,7 +72,7 @@ class _GameMainState extends State<GameMain>
   }
 
   void tapField(Offset localPosition) {
-    var p = this.gameField.inverseOffset(localPosition);
+    var p = this.widget.gameField.inverseOffset(localPosition);
     var target = this
         .blocks
         .reversed
@@ -105,7 +116,8 @@ class _GameMainState extends State<GameMain>
   Widget build(BuildContext context) {
     var screenSize = MediaQuery.of(context).size;
     // FIXME: should setState?
-    this.gameField.screenSize = Size(screenSize.width, screenSize.height - 220);
+    this.widget.gameField.screenSize =
+        Size(screenSize.width, screenSize.height - 220);
 
     return Scaffold(
       appBar: _buildAppBar(),
@@ -122,7 +134,8 @@ class _GameMainState extends State<GameMain>
                       onTapDown: (details) =>
                           this.tapField(details.localPosition),
                       child: CustomPaint(
-                        painter: _BlockListPainter(this.blocks, this.gameField),
+                        painter: _BlockListPainter(
+                            this.blocks, this.widget.gameField),
                         child: Container(),
                       ),
                     ),
@@ -149,8 +162,15 @@ class _BlockListPainter extends CustomPainter {
     imageDaKana = await loadImageAsset('assets/images/da_kana.png');
   }
 
-  GameField gameField;
   List<Block> blocks;
+  GameField gameField;
+  final Paint blockStrokePaint = Paint()
+    ..color = Colors.blue
+    ..strokeWidth = 4
+    ..style = PaintingStyle.stroke;
+  final Paint blockFillPaint = Paint()
+    ..color = Colors.grey
+    ..style = PaintingStyle.fill;
 
   _BlockListPainter(this.blocks, this.gameField) {
     initImage();
@@ -169,9 +189,9 @@ class _BlockListPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.clipRect(this.gameField.convertedRect());
+    canvas.clipRect(this.gameField.convertedRect);
     canvas.drawRect(
-        this.gameField.convertedRect(),
+        this.gameField.convertedRect,
         Paint()
           ..color = Colors.white
           ..style = PaintingStyle.fill);
@@ -195,13 +215,8 @@ class _BlockListPainter extends CustomPainter {
         rect.center,
         this.gameField.convertDouble(block.radius),
         (block.blockStatus == BlockStatus.Moving
-            ? (Paint()
-              ..color = Colors.blue
-              ..strokeWidth = 4
-              ..style = PaintingStyle.stroke)
-            : (Paint()
-              ..color = Colors.grey
-              ..style = PaintingStyle.fill)));
+            ? (this.blockStrokePaint)
+            : (this.blockFillPaint)));
 
     var image = this.getBlockImage(block);
     if (image != null) {
