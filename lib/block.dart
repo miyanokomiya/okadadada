@@ -75,15 +75,15 @@ class MotionGenerator {
 
   MotionGenerator(this.field, this.itemInterval, this.count);
 
-  double margin() => 2 * this.itemInterval;
+  double get margin => 2 * this.itemInterval;
 
   MotionData generate(int index) {
     return this.toBottom(this.random.nextDouble(), index);
   }
 
   MotionData toBottom(double rate, int index) {
-    var delay = (index + 1) * this.margin();
-    var d = this.field.height + this.margin() * this.count;
+    var delay = (index + 1) * this.margin;
+    var d = this.field.height + this.margin * (this.count + 1);
     var rotateDirection = this.getRotateDirection();
     return MotionData(
         Offset(

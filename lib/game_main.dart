@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
-import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'game_field.dart';
@@ -39,9 +38,9 @@ class _GameMainState extends State<GameMain>
   }
 
   void initGameState() {
-    var length = 10;
+    var length = 15;
     var typeIndexList = List.generate(length, (i) => i)..shuffle();
-    var motionGenerator = MotionGenerator(this.gameField.fieldSize, 60, length);
+    var motionGenerator = MotionGenerator(this.gameField.fieldSize, 80, length);
     this.blocks = List.generate(length, (i) {
       var motion = motionGenerator.generate(i);
       return Block.init(
@@ -105,6 +104,7 @@ class _GameMainState extends State<GameMain>
   @override
   Widget build(BuildContext context) {
     var screenSize = MediaQuery.of(context).size;
+    // FIXME: should setState?
     this.gameField.screenSize = Size(screenSize.width, screenSize.height - 220);
 
     return Scaffold(
@@ -187,7 +187,7 @@ class _BlockListPainter extends CustomPainter {
         width: this.gameField.convertDouble(block.width),
         height: this.gameField.convertDouble(block.height));
 
-    // canvas.save();
+    canvas.save();
     canvas.translate(convertedCenter.dx, convertedCenter.dy);
     canvas.rotate(entity.rotation);
     canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
@@ -211,10 +211,7 @@ class _BlockListPainter extends CustomPainter {
           rect,
           Paint());
     }
-    // canvas.restore();
-    canvas.translate(convertedCenter.dx, convertedCenter.dy);
-    canvas.rotate(-entity.rotation);
-    canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
+    canvas.restore();
   }
 
   @override
