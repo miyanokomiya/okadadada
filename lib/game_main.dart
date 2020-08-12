@@ -139,11 +139,11 @@ class _BlockListPainter extends CustomPainter {
   static ui.Image imageOka;
   static ui.Image imageDa;
   static ui.Image imageDaKana;
-  static bool imageLoaded = false;
+  static bool imageLoadStarted = false;
 
   static Future<Null> initImage() async {
-    if (imageLoaded) return;
-    imageLoaded = true;
+    if (imageLoadStarted) return;
+    imageLoadStarted = true;
     imageOka = await loadImageAsset('assets/images/oka.png');
     imageDa = await loadImageAsset('assets/images/da.png');
     imageDaKana = await loadImageAsset('assets/images/da_kana.png');
@@ -187,7 +187,7 @@ class _BlockListPainter extends CustomPainter {
         width: this.gameField.convertDouble(block.width),
         height: this.gameField.convertDouble(block.height));
 
-    canvas.save();
+    // canvas.save();
     canvas.translate(convertedCenter.dx, convertedCenter.dy);
     canvas.rotate(entity.rotation);
     canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
@@ -202,15 +202,19 @@ class _BlockListPainter extends CustomPainter {
             : (Paint()
               ..color = Colors.grey
               ..style = PaintingStyle.fill)));
-    if (imageLoaded) {
-      var image = this.getBlockImage(block);
+
+    var image = this.getBlockImage(block);
+    if (image != null) {
       canvas.drawImageRect(
           image,
           Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
           rect,
           Paint());
     }
-    canvas.restore();
+    // canvas.restore();
+    canvas.translate(convertedCenter.dx, convertedCenter.dy);
+    canvas.rotate(-entity.rotation);
+    canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
   }
 
   @override
