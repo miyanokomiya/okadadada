@@ -46,7 +46,7 @@ class Block extends RectEntity {
   BlockStatus blockStatus = BlockStatus.Moving;
   Animation<double> animation;
   RectEntity Function(Block) pipeAnimation;
-  double radiusRate = 0.8;
+  double radiusRate = 1;
 
   double get radius => this.width * this.radiusRate;
 

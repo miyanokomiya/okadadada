@@ -78,42 +78,49 @@ class _GameMainState extends State<GameMain>
     }
   }
 
+  int get _fixedBlockCount =>
+      this.blocks.where((b) => b.blockStatus == BlockStatus.Fixed).length;
+
+  Widget _buildAppBar() {
+    const text = Text('岡田ダダ - Play -');
+    return AppBar(title: text);
+  }
+
+  Widget _buildHeader() {
+    return Container(
+        padding: const EdgeInsets.all(20.0),
+        child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          Text('${this._fixedBlockCount} / ${this.blocks.length}',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
+          Container(width: 20),
+          RaisedButton(
+            child: Text('Reset'),
+            onPressed: () {
+              this.initGameState();
+            },
+          ),
+        ]));
+  }
+
   @override
   Widget build(BuildContext context) {
     var screenSize = MediaQuery.of(context).size;
     this.gameField.screenSize = Size(screenSize.width, screenSize.height - 220);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('岡田ダダ - Play -'),
-      ),
+      appBar: _buildAppBar(),
       body: Center(
         child: Column(
           children: [
-            Container(
-                padding: EdgeInsets.all(20.0),
-                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  Text(
-                      '${this.blocks.where((b) => b.blockStatus == BlockStatus.Fixed).length} / ${this.blocks.length}',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.w600)),
-                  Container(width: 20),
-                  RaisedButton(
-                    child: Text('Reset'),
-                    onPressed: () {
-                      this.initGameState();
-                    },
-                  ),
-                ])),
+            this._buildHeader(),
             Expanded(
                 child: OverflowBox(
               child: Container(
                   color: Colors.black,
                   child: ClipRect(
                     child: GestureDetector(
-                      onTapDown: (details) {
-                        this.tapField(details.localPosition);
-                      },
+                      onTapDown: (details) =>
+                          this.tapField(details.localPosition),
                       child: CustomPaint(
                         painter: _BlockListPainter(this.blocks, this.gameField),
                         child: Container(),
@@ -136,10 +143,10 @@ class _BlockListPainter extends CustomPainter {
 
   static Future<Null> initImage() async {
     if (imageLoaded) return;
+    imageLoaded = true;
     imageOka = await loadImageAsset('assets/images/oka.png');
     imageDa = await loadImageAsset('assets/images/da.png');
     imageDaKana = await loadImageAsset('assets/images/da_kana.png');
-    imageLoaded = true;
   }
 
   GameField gameField;
@@ -162,12 +169,12 @@ class _BlockListPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..isAntiAlias = true
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
     canvas.clipRect(this.gameField.convertedRect());
-    canvas.drawRect(this.gameField.convertedRect(), paint);
+    canvas.drawRect(
+        this.gameField.convertedRect(),
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill);
     this.blocks.forEach((block) => this.paintBlock(canvas, block));
   }
 
@@ -187,12 +194,14 @@ class _BlockListPainter extends CustomPainter {
     canvas.drawCircle(
         rect.center,
         this.gameField.convertDouble(block.radius),
-        Paint()
-          ..isAntiAlias = true
-          ..color = block.blockStatus == BlockStatus.Moving
-              ? Colors.blue
-              : Colors.grey
-          ..style = PaintingStyle.fill);
+        (block.blockStatus == BlockStatus.Moving
+            ? (Paint()
+              ..color = Colors.blue
+              ..strokeWidth = 4
+              ..style = PaintingStyle.stroke)
+            : (Paint()
+              ..color = Colors.grey
+              ..style = PaintingStyle.fill)));
     if (imageLoaded) {
       var image = this.getBlockImage(block);
       canvas.drawImageRect(
