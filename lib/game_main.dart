@@ -195,38 +195,86 @@ class _BlockListPainter extends CustomPainter {
         Paint()
           ..color = Colors.white
           ..style = PaintingStyle.fill);
-    this.blocks.forEach((block) => this.paintBlock(canvas, block));
+
+    this.paintBlockList(
+        canvas,
+        this
+            .blocks
+            .where((block) => block.blockStatus == BlockStatus.Moving)
+            .toList());
+    this.paintBlockList(
+        canvas,
+        this
+            .blocks
+            .where((block) => block.blockStatus != BlockStatus.Moving)
+            .toList());
   }
 
-  void paintBlock(Canvas canvas, Block block) {
-    var entity = block.animatedEntity();
-    var convertedCenter =
-        this.gameField.convertOffset(Offset(entity.x, entity.y));
-    var rect = Rect.fromCenter(
-        center: convertedCenter,
-        width: this.gameField.convertDouble(block.width),
-        height: this.gameField.convertDouble(block.height));
+  void paintBlockList(Canvas canvas, List<Block> _blocks) {
+    this.paintBlockOutline(canvas, _blocks);
 
-    canvas.save();
-    canvas.translate(convertedCenter.dx, convertedCenter.dy);
-    canvas.rotate(entity.rotation);
-    canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
-    canvas.drawCircle(
-        rect.center,
-        this.gameField.convertDouble(block.radius),
-        (block.blockStatus == BlockStatus.Moving
-            ? (this.blockStrokePaint)
-            : (this.blockFillPaint)));
+    this.paintBlockImage(
+        canvas,
+        imageOka,
+        _blocks
+            .where((block) => block.blockType == BlockType.Oka)
+            .map((block) => block.animatedEntity())
+            .toList());
+    this.paintBlockImage(
+        canvas,
+        imageDa,
+        _blocks
+            .where((block) => block.blockType == BlockType.Da)
+            .map((block) => block.animatedEntity())
+            .toList());
+    this.paintBlockImage(
+        canvas,
+        imageDaKana,
+        _blocks
+            .where((block) => block.blockType == BlockType.DaKana)
+            .map((block) => block.animatedEntity())
+            .toList());
+  }
 
-    var image = this.getBlockImage(block);
-    if (image != null) {
-      canvas.drawImageRect(
-          image,
-          Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-          rect,
-          Paint());
-    }
-    canvas.restore();
+  void paintBlockImage(
+      Canvas canvas, ui.Image image, List<RectEntity> entities) {
+    if (image == null) return;
+
+    Rect rect =
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    canvas.drawAtlas(
+        image,
+        entities.map((RectEntity entity) {
+          var convertedCenter =
+              this.gameField.convertOffset(Offset(entity.x, entity.y));
+          return RSTransform.fromComponents(
+            rotation: entity.rotation,
+            scale: this.gameField.convertDouble(entity.width) / rect.width,
+            anchorX: rect.width / 2,
+            anchorY: rect.height / 2,
+            translateX: convertedCenter.dx,
+            translateY: convertedCenter.dy,
+          );
+        }).toList(),
+        entities.map((_) => rect).toList(),
+        [],
+        BlendMode.src,
+        null,
+        Paint());
+  }
+
+  void paintBlockOutline(Canvas canvas, List<Block> blocks) {
+    blocks.forEach((block) {
+      var entity = block.animatedEntity();
+      var convertedCenter =
+          this.gameField.convertOffset(Offset(entity.x, entity.y));
+      canvas.drawCircle(
+          convertedCenter,
+          this.gameField.convertDouble(block.radius),
+          (block.blockStatus == BlockStatus.Moving
+              ? (this.blockStrokePaint)
+              : (this.blockFillPaint)));
+    });
   }
 
   @override
