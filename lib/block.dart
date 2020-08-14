@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
-import 'dart:async';
 import 'dart:math';
 
 enum BlockType {
@@ -14,45 +13,47 @@ enum BlockStatus {
   Fixed,
 }
 
-class RectEntity {
+class BlockEntity {
   double x;
   double y;
-  double width;
-  double height;
-  double rotation;
-  double scale;
+  double width = 50;
+  double height = 50;
+  double rotation = 0;
+  double scale = 0;
+  double radiusRate = 1;
 
-  RectEntity.init(this.x, this.y)
-      : this.width = 50,
-        this.height = 50,
-        this.rotation = 0,
-        this.scale = 0;
+  BlockEntity.init(this.x, this.y);
 
-  RectEntity clone() => RectEntity.init(this.x, this.y)
+  BlockEntity clone() => BlockEntity.init(this.x, this.y)
     ..width = this.width
     ..height = this.height
     ..rotation = this.rotation
-    ..scale = this.scale;
+    ..scale = this.scale
+    ..radiusRate = this.radiusRate;
 
   double left() => this.x - this.width / 2;
   double right() => this.x + this.width / 2;
   double top() => this.y - this.height / 2;
   double bottom() => this.y + this.height / 2;
   Offset get center => Offset(this.x, this.y);
+  double get radius => this.width * this.radiusRate;
 }
 
-class Block extends RectEntity {
+class Block extends BlockEntity {
   BlockType blockType;
   BlockStatus blockStatus = BlockStatus.Moving;
   Animation<double> animation;
-  RectEntity Function(Block) pipeAnimation;
-  double radiusRate = 1;
-
-  double get radius => this.width * this.radiusRate;
+  BlockEntity Function(Block) pipeAnimation;
+  double fixedAnimationValue = 0;
 
   Block.init({double x, double y, this.blockType}) : super.init(x, y);
 
-  RectEntity animatedEntity() => this.pipeAnimation(this);
+  double get animatedValueFromFixed {
+    var val = this.animation.value - this.fixedAnimationValue;
+    return val >= 0 ? val : val + 1;
+  }
+
+  BlockEntity animatedEntity() => this.pipeAnimation(this);
 
   bool testHit(Offset p) {
     var center = this.animatedEntity().center;
@@ -61,9 +62,13 @@ class Block extends RectEntity {
 
   void fix() {
     this.blockStatus = BlockStatus.Fixed;
-    this.radiusRate = 2;
     var fixed = this.animatedEntity();
-    this.pipeAnimation = (Block _) => fixed;
+    this.fixedAnimationValue = this.animation.value;
+    this.pipeAnimation = (Block b) {
+      var ret = fixed.clone();
+      ret.radiusRate = 2 * max(1 - b.animatedValueFromFixed, 1);
+      return ret;
+    };
   }
 }
 
@@ -87,7 +92,8 @@ class MotionGenerator {
     var rotateDirection = this.getRotateDirection();
     return MotionData(
         Offset(
-            this.itemInterval + rate * (this.field.width - 2 * this.itemInterval),
+            this.itemInterval +
+                rate * (this.field.width - 2 * this.itemInterval),
             0),
         (block) => block.clone()
           ..y = block.animation.value * d - delay
@@ -105,7 +111,7 @@ class MotionGenerator {
 
 class MotionData {
   Offset from;
-  RectEntity Function(Block) transform;
+  BlockEntity Function(Block) transform;
 
   MotionData(this.from, this.transform);
 }

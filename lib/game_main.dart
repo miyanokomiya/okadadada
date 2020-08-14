@@ -237,14 +237,14 @@ class _BlockListPainter extends CustomPainter {
   }
 
   void paintBlockImage(
-      Canvas canvas, ui.Image image, List<RectEntity> entities) {
+      Canvas canvas, ui.Image image, List<BlockEntity> entities) {
     if (image == null) return;
 
     Rect rect =
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     canvas.drawAtlas(
         image,
-        entities.map((RectEntity entity) {
+        entities.map((BlockEntity entity) {
           var convertedCenter =
               this.gameField.convertOffset(Offset(entity.x, entity.y));
           return RSTransform.fromComponents(
@@ -270,7 +270,7 @@ class _BlockListPainter extends CustomPainter {
           this.gameField.convertOffset(Offset(entity.x, entity.y));
       canvas.drawCircle(
           convertedCenter,
-          this.gameField.convertDouble(block.radius),
+          this.gameField.convertDouble(entity.radius),
           (block.blockStatus == BlockStatus.Moving
               ? (this.blockStrokePaint)
               : (this.blockFillPaint)));
