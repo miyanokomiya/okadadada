@@ -66,7 +66,7 @@ class Block extends BlockEntity {
     this.fixedAnimationValue = this.animation.value;
     this.pipeAnimation = (Block b) {
       var ret = fixed.clone();
-      ret.radiusRate = 2 * max(1 - b.animatedValueFromFixed, 1);
+      ret.radiusRate = 2.0 * max(1.0 - b.animatedValueFromFixed, 0.5);
       return ret;
     };
   }

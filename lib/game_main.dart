@@ -212,31 +212,35 @@ class _BlockListPainter extends CustomPainter {
 
   void paintBlockList(Canvas canvas, List<Block> _blocks) {
     this.paintBlockOutline(canvas, _blocks);
+    _blocks.forEach((b) {
+      this.paintBlockImage(canvas, b);
+    });
 
-    this.paintBlockImage(
-        canvas,
-        imageOka,
-        _blocks
-            .where((block) => block.blockType == BlockType.Oka)
-            .map((block) => block.animatedEntity())
-            .toList());
-    this.paintBlockImage(
-        canvas,
-        imageDa,
-        _blocks
-            .where((block) => block.blockType == BlockType.Da)
-            .map((block) => block.animatedEntity())
-            .toList());
-    this.paintBlockImage(
-        canvas,
-        imageDaKana,
-        _blocks
-            .where((block) => block.blockType == BlockType.DaKana)
-            .map((block) => block.animatedEntity())
-            .toList());
+    // FIXME: 'drawAtlas' does not work on web
+    // this.paintBlocksImage(
+    //     canvas,
+    //     imageOka,
+    //     _blocks
+    //         .where((block) => block.blockType == BlockType.Oka)
+    //         .map((block) => block.animatedEntity())
+    //         .toList());
+    // this.paintBlocksImage(
+    //     canvas,
+    //     imageDa,
+    //     _blocks
+    //         .where((block) => block.blockType == BlockType.Da)
+    //         .map((block) => block.animatedEntity())
+    //         .toList());
+    // this.paintBlocksImage(
+    //     canvas,
+    //     imageDaKana,
+    //     _blocks
+    //         .where((block) => block.blockType == BlockType.DaKana)
+    //         .map((block) => block.animatedEntity())
+    //         .toList());
   }
 
-  void paintBlockImage(
+  void paintBlocksImage(
       Canvas canvas, ui.Image image, List<BlockEntity> entities) {
     if (image == null) return;
 
@@ -275,6 +279,31 @@ class _BlockListPainter extends CustomPainter {
               ? (this.blockStrokePaint)
               : (this.blockFillPaint)));
     });
+  }
+
+  void paintBlockImage(Canvas canvas, Block block) {
+    var image = getBlockImage(block);
+    if (image == null) return;
+
+    var entity = block.animatedEntity();
+    var convertedCenter =
+        this.gameField.convertOffset(entity.center);
+
+    canvas.save();
+    canvas.translate(convertedCenter.dx, convertedCenter.dy);
+    canvas.rotate(entity.rotation);
+    canvas.translate(-convertedCenter.dx, -convertedCenter.dy);
+
+    canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        Rect.fromCenter(
+            center: convertedCenter,
+            width: this.gameField.convertDouble(entity.width),
+            height: this.gameField.convertDouble(entity.height)),
+        Paint());
+
+    canvas.restore();
   }
 
   @override
